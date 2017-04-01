@@ -1,5 +1,6 @@
 import os
 import re
+
 from itertools import islice
 
 def get_filepaths_tests(directory, ALL_PY=False):
@@ -47,7 +48,8 @@ def exclude_files(list_files):
     for file in list_files:
 
         if file.endswith('.doctest'):
-            #print(file)
+            print(file)
+            result.append(file)
             continue
 
         f = file.rfind(os.sep)
@@ -55,13 +57,42 @@ def exclude_files(list_files):
 
         if file[f+1:].startswith('test_'):
             #print('continue')
+            print(file)
+            result.append(file)
             continue
 
         if find_test_from_pattern(file,PATTERN='#DOCTEST'):
             print(file)
+            result.append(file)
+            continue
+    return result
+
+
 
 
 if __name__ == '__main__':
-    res = get_filepaths_tests('D:\Repositories\pyteamcity', True)
-    #print(res)
-    exclude_files(res)
+    res = get_filepaths_tests('/home/administrator/PycharmProjects/test_searcher/tests_for_searcher', True)
+    print(res)
+    tests = exclude_files(res)
+
+
+    #exclude_files(res)
+    import unittest
+    import sys
+
+    Test_Suit = unittest.TestLoader()
+    All_Test = Test_Suit.discover(start_dir='/home/administrator/PycharmProjects/test_searcher/tests_for_searcher',
+                                  pattern="test_*.py")
+    DocTests = Test_Suit.discover(start_dir='/home/administrator/PycharmProjects/test_searcher/tests_for_searcher',
+                                  pattern="*.doctest")
+
+    result = unittest.TestResult()
+    Test_result = All_Test.run(result=result)
+    print(Test_result)
+
+    d_res = unittest.TestResult()
+    Doc_res = DocTests.run(result=d_res)
+    print(Doc_res)
+
+    test = Test_Suit.loadTestsFromName('tests_for_searcher.test.test_t2')
+
