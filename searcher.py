@@ -1,7 +1,9 @@
 import os
 import re
-
-from itertools import islice
+import unittest
+import doctest
+import sys
+from optparse import OptionParser
 
 project_root_dir = os.path.dirname(os.path.abspath(__file__))
 print(project_root_dir)
@@ -73,19 +75,20 @@ def exclude_files(list_files):
             continue
 
         if file.endswith('.doctest'):
-            print(file)
+            #print(file)
             result.append(file)
             res['text_doctest_files'].append(file)
             continue
 
         if find_test_from_pattern(file,PATTERN='#DOCTEST'):
-            print(file)
+            #print(file)
             result.append(file)
             res['py_doctest_files'].append(file)
             continue
 
     relative_path_for_py_doc_test(res['py_doctest_files'])
     return res
+
 
 def generate_test_suit(tests_dictonary, patterns='test_*.py'):
     TestLoader = unittest.TestLoader()
@@ -101,55 +104,56 @@ def generate_test_suit(tests_dictonary, patterns='test_*.py'):
 
     return TestSuit
 
-
-
-
-if __name__ == '__main__':
-    res = get_filepaths_tests('/home/administrator/PycharmProjects/test_searcher/tests_for_searcher', True)
-    print(res)
+def run(root_project):
+    res = get_filepaths_tests(root_project, True)
     tests = exclude_files(res)
-    print(tests)
-
-    import unittest
-    import doctest
-
     TS = generate_test_suit(tests)
-    print(TS)
+    #print(TS)
     result = unittest.TestResult()
     Test_result = TS.run(result=result)
     fail = Test_result.failures
-    print(fail)
-    print(Test_result)
+    if len(fail) > 0:
+        #print(fail)
+        return 1
+
+    return 0
+    #print(fail)
+    #print(Test_result)
+
+def cli():
+    common_result = 0
+    # --- Input parameters
+
+    parser = OptionParser()
+
+    parser.description = 'Search and run tests in project'
+
+    parser.add_option('-r', '--root', dest='root', default=None,
+                      help='root project')
 
 
 
+    parser.usage = os.path.split(__file__)[-1] + ' -r root'
+
+    (options, args) = parser.parse_args()
+
+    if options.root is None:
+        common_result += 1
 
 
+    print('Check input parameters - COMPLETED')
 
-    '''
-    Test_Suit = unittest.TestLoader()
-    All_Test = Test_Suit.discover(start_dir='/home/administrator/PycharmProjects/test_searcher/tests_for_searcher',
-                                  pattern="test_*.py")
+    if common_result == 0:
+        try:
+            result = run(options.root)
+            return result
+        except Exception as e:
+            print(e)
 
-    #DocTest = doctest.testfile(filename='/home/administrator/PycharmProjects/'
-    #                                    'test_searcher/tests_for_searcher/d/doc_t2.doctest')
+    return common_result
 
-    DocTest = doctest.DocFileSuite('/home/administrator/PycharmProjects/test_searcher/'
-                                   'tests_for_searcher/d/doc_t4.doctest', module_relative=False)
-    print(DocTest)
+if __name__ == '__main__':
+    sys.stderr.write(str(cli()))
 
-    All_Test.addTests(DocTest)
-    DocTest = doctest.DocTestSuite('tests_for_searcher.example_1')
-    #print(All_Test)
-    print(DocTest)
-    All_Test.addTests(DocTest)
 
-    result = unittest.TestResult()
-    Test_result = All_Test.run(result=result)
-    fail = Test_result.failures
-    print(fail)
-    print(Test_result)
-
-    '''
-#    test = Test_Suit.loadTestsFromName('tests_for_searcher.test.test_t2')
 
