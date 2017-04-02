@@ -3,6 +3,9 @@ import re
 
 from itertools import islice
 
+project_root_dir = os.path.dirname(os.path.abspath(__file__))
+print(project_root_dir)
+
 def get_filepaths_tests(directory, ALL_PY=False):
     """
     This function will generate the file names in a directory
@@ -42,30 +45,61 @@ def find_test_from_pattern(file,PATTERN):
 
     return False
 
+def relative_path_for_py_doc_test(paths):
+    count = 0
+    for p in paths:
+        p = p.replace(project_root_dir + os.sep, '')
+        p = p.replace('.py' , '')
+        p = p.replace(os.sep, '.')
+
+        paths[count] = p
+        count += 1
+
+    return paths
+
 
 def exclude_files(list_files):
+    res = {}
+    res['text_doctest_files'] = []
+    res['py_doctest_files'] = []
+
     result = []
     for file in list_files:
+
+        f = file.rfind(os.sep)
+        # print(file[f+1:])
+
+        if file[f + 1:].startswith('test_'):
+            continue
 
         if file.endswith('.doctest'):
             print(file)
             result.append(file)
-            continue
-
-        f = file.rfind(os.sep)
-        #print(file[f+1:])
-
-        if file[f+1:].startswith('test_'):
-            #print('continue')
-            print(file)
-            result.append(file)
+            res['text_doctest_files'].append(file)
             continue
 
         if find_test_from_pattern(file,PATTERN='#DOCTEST'):
             print(file)
             result.append(file)
+            res['py_doctest_files'].append(file)
             continue
-    return result
+
+    relative_path_for_py_doc_test(res['py_doctest_files'])
+    return res
+
+def generate_test_suit(tests_dictonary, patterns='test_*.py'):
+    TestLoader = unittest.TestLoader()
+    TestSuit = TestLoader.discover(start_dir=project_root_dir,
+                                  pattern=patterns)
+    for text_doc_file in tests_dictonary['text_doctest_files']:
+        DocTest = doctest.DocFileSuite(text_doc_file, module_relative=False)
+        TestSuit.addTests(DocTest)
+
+    for py_doc_test in tests_dictonary['py_doctest_files']:
+        DocTest = doctest.DocTestSuite(module=py_doc_test)
+        TestSuit.addTests(DocTest)
+
+    return TestSuit
 
 
 
@@ -74,25 +108,48 @@ if __name__ == '__main__':
     res = get_filepaths_tests('/home/administrator/PycharmProjects/test_searcher/tests_for_searcher', True)
     print(res)
     tests = exclude_files(res)
+    print(tests)
 
-
-    #exclude_files(res)
     import unittest
-    import sys
+    import doctest
 
+    TS = generate_test_suit(tests)
+    print(TS)
+    result = unittest.TestResult()
+    Test_result = TS.run(result=result)
+    fail = Test_result.failures
+    print(fail)
+    print(Test_result)
+
+
+
+
+
+
+    '''
     Test_Suit = unittest.TestLoader()
     All_Test = Test_Suit.discover(start_dir='/home/administrator/PycharmProjects/test_searcher/tests_for_searcher',
                                   pattern="test_*.py")
-    DocTests = Test_Suit.discover(start_dir='/home/administrator/PycharmProjects/test_searcher/tests_for_searcher',
-                                  pattern="*.doctest")
+
+    #DocTest = doctest.testfile(filename='/home/administrator/PycharmProjects/'
+    #                                    'test_searcher/tests_for_searcher/d/doc_t2.doctest')
+
+    DocTest = doctest.DocFileSuite('/home/administrator/PycharmProjects/test_searcher/'
+                                   'tests_for_searcher/d/doc_t4.doctest', module_relative=False)
+    print(DocTest)
+
+    All_Test.addTests(DocTest)
+    DocTest = doctest.DocTestSuite('tests_for_searcher.example_1')
+    #print(All_Test)
+    print(DocTest)
+    All_Test.addTests(DocTest)
 
     result = unittest.TestResult()
     Test_result = All_Test.run(result=result)
+    fail = Test_result.failures
+    print(fail)
     print(Test_result)
 
-    d_res = unittest.TestResult()
-    Doc_res = DocTests.run(result=d_res)
-    print(Doc_res)
-
-    test = Test_Suit.loadTestsFromName('tests_for_searcher.test.test_t2')
+    '''
+#    test = Test_Suit.loadTestsFromName('tests_for_searcher.test.test_t2')
 
