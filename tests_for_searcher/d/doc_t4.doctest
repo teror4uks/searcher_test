@@ -1,0 +1,16 @@
+Модуль ``example``
+======================
+#CATEGORY(NAME1,NAME2)
+
+Использование ``factorial``
+-------------------
+
+Это пример текстового файла в формате reStructuredText.  Во-первых, импортируем
+``factorial`` из модуля ``example``:
+
+    >>> from factorial import factorial
+
+Теперь используем его:
+
+    >>> factorial(5)
+    120
